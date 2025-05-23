@@ -1,0 +1,484 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    width: 380px;
+    height: 580px;
+    overflow-x: hidden;
+  }
+  
+  .container {
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Header and Tabs */
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #2c3e50;
+  }
+  
+  .tabs {
+    display: flex;
+    justify-content: space-between;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 15px;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.3s ease;
+  }
+  
+  .tab-btn.active {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  .tab-btn:hover:not(.active) {
+    background-color: #d1d9e6;
+  }
+  
+  /* Tab Content */
+  main {
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .tab-content {
+    display: none;
+    padding: 15px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Pomodoro Section */
+  .pet-container {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  
+  #pet-image {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+  }
+  
+  .timer-container {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .timer-display {
+    font-size: 48px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 15px;
+  }
+  
+  .timer-controls {
+    margin-bottom: 15px;
+  }
+  
+  #timer-slider {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  #timer-value {
+    font-size: 14px;
+    color: #6c757d;
+  }
+  
+  .timer-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .timer-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  #start-timer {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  #pause-timer {
+    background-color: #f39c12;
+    color: white;
+  }
+  
+  #reset-timer {
+    background-color: #e74c3c;
+    color: white;
+  }
+  
+  .timer-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .music-container {
+    margin-top: 20px;
+  }
+  
+  .music-container h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+  }
+  
+  .music-options {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  
+  .music-btn {
+    padding: 6px 12px;
+    background-color: #ecf0f1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .music-btn.active {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  .volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  #volume {
+    flex: 1;
+  }
+  
+  /* Website Blocker Section */
+  .blocker-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  #block-url {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  #add-block {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .blocked-list-container {
+    margin-bottom: 15px;
+  }
+  
+  .blocked-list-container h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+  }
+  
+  .blocked-list {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    padding: 5px;
+  }
+  
+  .blocked-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .blocked-list li:last-child {
+    border-bottom: none;
+  }
+  
+  .blocked-list .remove-block {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 6px;
+    cursor: pointer;
+  }
+  
+  .blocker-controls {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .blocker-controls button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  #enable-blocker {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  #disable-blocker {
+    background-color: #e74c3c;
+    color: white;
+  }
+  
+  /* To-Do List Section */
+  .todo-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  #todo-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  #add-todo {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .todo-list {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+  }
+  
+  .todo-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .todo-list li:last-child {
+    border-bottom: none;
+  }
+  
+  .todo-list .todo-text {
+    flex: 1;
+  }
+  
+  .todo-list .todo-text.completed {
+    text-decoration: line-through;
+    color: #95a5a6;
+  }
+  
+  .todo-list .todo-actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .todo-list .todo-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .todo-list .complete-todo {
+    color: #2ecc71;
+  }
+  
+  .todo-list .remove-todo {
+    color: #e74c3c;
+  }
+  
+  .todo-stats {
+    text-align: right;
+    font-size: 14px;
+    color: #7f8c8d;
+  }
+  
+  /* Summary Section */
+  .summary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .chart-container {
+    height: 200px;
+    margin-bottom: 15px;
+  }
+  
+  .stats-container {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .stat-item {
+    text-align: center;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    flex: 1;
+    margin: 0 5px;
+  }
+  
+  .stat-item h3 {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #2c3e50;
+  }
+  
+  .stat-item p {
+    font-size: 18px;
+    font-weight: bold;
+    color: #3498db;
+  }
+  
+  /* Reminder Section */
+  .reminder-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .reminder-section h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #2c3e50;
+  }
+  
+  .reminder-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  #reminder-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  #add-reminder {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .reminder-frequency {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  
+  #reminder-interval {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .reminder-list {
+    max-height: 100px;
+    overflow-y: auto;
+  }
+  
+  .reminder-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .reminder-list li:last-child {
+    border-bottom: none;
+  }
+  
+  .reminder-list .remove-reminder {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 6px;
+    cursor: pointer;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 400px) {
+    .stats-container {
+      flex-direction: column;
+      gap: 10px;
+    }
+  
+    .stat-item {
+      margin: 0;
+    }
+  }
+  

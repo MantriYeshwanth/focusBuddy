@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Focus Buddy</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="pomodoro">Pomodoro</button>
+        <button class="tab-btn" data-tab="blocker">Blocker</button>
+        <button class="tab-btn" data-tab="todo">To-Do</button>
+        <button class="tab-btn" data-tab="summary">Summary</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Pomodoro Tab -->
+      <section id="pomodoro" class="tab-content active">
+        <div class="pet-container">
+          <img id="pet-image" src="images/pet-happy.png" alt="Pet Status">
+        </div>
+        
+        <div class="timer-container">
+          <div class="timer-display">
+            <span id="minutes">25</span>:<span id="seconds">00</span>
+          </div>
+          
+          <div class="timer-controls">
+            <input type="range" id="timer-slider" min="1" max="60" value="25">
+            <span id="timer-value">25 minutes</span>
+          </div>
+          
+          <div class="timer-buttons">
+            <button id="start-timer">Start</button>
+            <button id="pause-timer" disabled>Pause</button>
+            <button id="reset-timer">Reset</button>
+          </div>
+        </div>
+        
+        <div class="music-container">
+          <h3>Background Music</h3>
+          <div class="music-options">
+            <button class="music-btn" data-sound="rain">Rain</button>
+            <button class="music-btn" data-sound="cafe">Cafe</button>
+            <button class="music-btn" data-sound="study">Study</button>
+            <button class="music-btn" data-sound="focus">Forest</button>
+            <button class="music-btn" data-sound="Unstoppable">Unstoppable</button>
+          </div>
+          <div class="volume-control">
+            <label for="volume">Volume:</label>
+            <input type="range" id="volume" min="0" max="100" value="50">
+          </div>
+        </div>
+      </section>
+
+      <!-- Website Blocker Tab -->
+      <section id="blocker" class="tab-content">
+        <h2>Website Blocker</h2>
+        <div class="blocker-form">
+          <input type="text" id="block-url" placeholder="Enter website to block (e.g., youtube)">
+          <button id="add-block">Block</button>
+        </div>
+        
+        <div class="blocked-list-container">
+          <h3>Blocked Websites</h3>
+          <ul id="blocked-list" class="blocked-list"></ul>
+        </div>
+        
+        <div class="blocker-controls">
+          <button id="enable-blocker">Enable Blocker</button>
+          <button id="disable-blocker">Disable Blocker</button>
+        </div>
+      </section>
+
+      <!-- To-Do List Tab -->
+      <section id="todo" class="tab-content">
+        <h2>To-Do List</h2>
+        <div class="todo-form">
+          <input type="text" id="todo-input" placeholder="Add a new task">
+          <button id="add-todo">Add</button>
+        </div>
+        
+        <ul id="todo-list" class="todo-list"></ul>
+        
+        <div class="todo-stats">
+          <span id="todo-count">0/10 tasks</span>
+        </div>
+      </section>
+
+      <!-- Summary Tab -->
+      <section id="summary" class="tab-content">
+        <h2>Focus Summary</h2>
+        <div class="summary-container">
+          <div class="chart-container">
+            <canvas id="focus-chart"></canvas>
+          </div>
+          
+          <div class="stats-container">
+            <div class="stat-item">
+              <h3>Today</h3>
+              <p><span id="today-hours">0</span> hours focused</p>
+            </div>
+            <div class="stat-item">
+              <h3>This Week</h3>
+              <p><span id="week-hours">0</span> hours focused</p>
+            </div>
+            <div class="stat-item">
+              <h3>Total</h3>
+              <p><span id="total-hours">0</span> hours focused</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="reminder-section">
+      <h3>Custom Reminders</h3>
+      <div class="reminder-form">
+        <input type="text" id="reminder-input" placeholder="Add motivational message">
+        <button id="add-reminder">Add</button>
+      </div>
+      <div class="reminder-frequency">
+        <label for="reminder-interval">Show reminder every:</label>
+        <select id="reminder-interval">
+        <option value="1">1 minutes</option>
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">60 minutes</option>
+        </select>
+      </div>
+      <ul id="reminder-list" class="reminder-list"></ul>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+  <script src="pomodoro.js"></script>
+  <script src="blocker.js"></script>
+  <script src="todo.js"></script>
+  <script src="summary.js"></script>
+</body>
+</html>

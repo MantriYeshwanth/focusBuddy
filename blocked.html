@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Blocked</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 600px;
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      color: #e74c3c;
+      margin-bottom: 20px;
+    }
+    
+    p {
+      font-size: 18px;
+      line-height: 1.6;
+      margin-bottom: 25px;
+    }
+    
+    .pet-image {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 20px;
+    }
+    
+    .button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="images/pet-sad.png" alt="Sad Pet" class="pet-image">
+    <h1>Website Blocked</h1>
+    <p>This website has been blocked to help you stay focused. Your pet is sad because you're getting distracted!</p>
+    <p>Return to your work and complete your focus session.</p>
+    <button class="button" id="go-back">Go Back</button>
+  </div>
+  
+  <script>
+    document.getElementById('go-back').addEventListener('click', function() {
+      history.back();
+    });
+  </script>
+</body>
+</html>
