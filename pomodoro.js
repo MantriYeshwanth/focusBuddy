@@ -14,7 +14,7 @@
 
 //   let timerInterval
 //   let currentSound = null
-//   const audioElement = null
+//   let audioPlayer = null
 
 //   // Initialize timer display
 //   chrome.storage.local.get(["timerDuration", "timerRemaining", "timerRunning"], (data) => {
@@ -128,11 +128,14 @@
 //       if (activeButton) {
 //         activeButton.classList.add("active")
 //         currentSound = data.currentSound
+//         // Try to play the current sound
+//         playSound(data.currentSound)
 //       }
 //     }
 //   })
 
-//   // Improved Music buttons
+//   // DIRECT AUDIO IMPLEMENTATION
+//   // Music buttons with direct audio handling
 //   musicButtons.forEach((button) => {
 //     button.addEventListener("click", function () {
 //       const sound = this.getAttribute("data-sound")
@@ -143,8 +146,9 @@
 //         // Stop sound
 //         console.log(`Stopping sound: ${sound}`)
 //         musicButtons.forEach((btn) => btn.classList.remove("active"))
-//         chrome.runtime.sendMessage({ action: "stopSound" })
+//         stopSound()
 //         currentSound = null
+//         chrome.storage.local.set({ currentSound: null })
 //       } else {
 //         // Remove active class from all buttons
 //         musicButtons.forEach((btn) => btn.classList.remove("active"))
@@ -152,17 +156,73 @@
 //         // Add active class to clicked button
 //         this.classList.add("active")
 //         currentSound = sound
+//         chrome.storage.local.set({ currentSound: sound })
 
-//         // Play sound
-//         console.log(`Playing sound: ${sound} at volume: ${volumeControl.value / 100}`)
-//         chrome.runtime.sendMessage({
-//           action: "playSound",
-//           sound: sound,
-//           volume: volumeControl.value / 100,
-//         })
+//         // Play sound directly
+//         playSound(sound)
 //       }
 //     })
 //   })
+
+//   // Direct audio playback functions
+//   function playSound(sound) {
+//     stopSound()
+    
+//     try {
+//       console.log(`Playing sound: ${sound}`)
+//       const soundUrl = chrome.runtime.getURL(`sounds/${sound}.mp3`)
+//       console.log(`Sound URL: ${soundUrl}`)
+      
+//       // Create and configure audio element
+//       audioPlayer = new Audio()
+//       audioPlayer.src = soundUrl
+//       audioPlayer.loop = true
+//       audioPlayer.volume = volumeControl.value / 100
+      
+//       // Debug listeners
+//       audioPlayer.addEventListener('canplay', () => {
+//         console.log(`Sound ${sound} loaded and ready to play`)
+//       })
+      
+//       audioPlayer.addEventListener('playing', () => {
+//         console.log(`Sound ${sound} is now playing`)
+//       })
+      
+//       audioPlayer.addEventListener('error', (e) => {
+//         console.error(`Error with sound ${sound}:`, e)
+//         console.error('Audio error code:', audioPlayer.error ? audioPlayer.error.code : 'unknown')
+//       })
+      
+//       // Play the sound
+//       audioPlayer.play()
+//         .then(() => {
+//           console.log(`Sound ${sound} playing successfully`)
+//         })
+//         .catch(err => {
+//           console.error(`Failed to play ${sound}:`, err)
+//           // Try an alternative approach
+//           setTimeout(() => {
+//             console.log(`Retrying playback for ${sound}`)
+//             audioPlayer.play().catch(e => console.error(`Retry failed:`, e))
+//           }, 500)
+//         })
+//     } catch (err) {
+//       console.error(`Error setting up audio for ${sound}:`, err)
+//     }
+//   }
+
+//   function stopSound() {
+//     if (audioPlayer) {
+//       try {
+//         audioPlayer.pause()
+//         audioPlayer.currentTime = 0
+//         audioPlayer = null
+//         console.log("Sound stopped")
+//       } catch (err) {
+//         console.error("Error stopping sound:", err)
+//       }
+//     }
+//   }
 
 //   // Volume control
 //   volumeControl.addEventListener("input", function () {
@@ -171,11 +231,8 @@
 
 //     chrome.storage.local.set({ volume: this.value })
 
-//     if (currentSound) {
-//       chrome.runtime.sendMessage({
-//         action: "setVolume",
-//         volume: volume,
-//       })
+//     if (audioPlayer) {
+//       audioPlayer.volume = volume
 //     }
 //   })
 
@@ -253,8 +310,38 @@
 //     }
 //   })
 
-//   // Check audio files on load
-//   chrome.runtime.sendMessage({ action: "checkAudioFiles" })
+//   // Debug function to check audio files
+//   function checkAudioFiles() {
+//     const sounds = ["rain", "cafe", "study", "forest","Unstoppable"]
+    
+//     sounds.forEach(sound => {
+//       const url = chrome.runtime.getURL(`sounds/${sound}.mp3`)
+//       console.log(`Checking sound file: ${url}`)
+      
+//       fetch(url)
+//         .then(response => {
+//           if (response.ok) {
+//             console.log(`✓ ${sound}.mp3 is accessible`)
+//             return response.blob()
+//           } else {
+//             console.error(`✗ ${sound}.mp3 not found: ${response.status}`)
+//             throw new Error(`File not found: ${response.status}`)
+//           }
+//         })
+//         .then(blob => {
+//           console.log(`${sound}.mp3 size: ${blob.size} bytes`)
+//           if (blob.size === 0) {
+//             console.warn(`${sound}.mp3 is empty!`)
+//           }
+//         })
+//         .catch(err => {
+//           console.error(`Error checking ${sound}.mp3:`, err)
+//         })
+//     })
+//   }
+  
+//   // Run the check on load
+//   checkAudioFiles()
 // })
 
 // // Update timer display
@@ -268,6 +355,7 @@
 //   minutesDisplay.textContent = mins.toString().padStart(2, "0")
 //   secondsDisplay.textContent = secs.toString().padStart(2, "0")
 // }
+
 document.addEventListener("DOMContentLoaded", () => {
   // Timer elements
   const minutesDisplay = document.getElementById("minutes")
@@ -284,7 +372,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let timerInterval
   let currentSound = null
-  let audioPlayer = null
 
   // Initialize timer display
   chrome.storage.local.get(["timerDuration", "timerRemaining", "timerRunning"], (data) => {
@@ -398,14 +485,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (activeButton) {
         activeButton.classList.add("active")
         currentSound = data.currentSound
-        // Try to play the current sound
-        playSound(data.currentSound)
       }
     }
   })
 
-  // DIRECT AUDIO IMPLEMENTATION
-  // Music buttons with direct audio handling
+  // Improved Music buttons
   musicButtons.forEach((button) => {
     button.addEventListener("click", function () {
       const sound = this.getAttribute("data-sound")
@@ -416,9 +500,10 @@ document.addEventListener("DOMContentLoaded", () => {
         // Stop sound
         console.log(`Stopping sound: ${sound}`)
         musicButtons.forEach((btn) => btn.classList.remove("active"))
-        stopSound()
+        chrome.runtime.sendMessage({ action: "stopSound" }, (response) => {
+          console.log("Stop sound response:", response)
+        })
         currentSound = null
-        chrome.storage.local.set({ currentSound: null })
       } else {
         // Remove active class from all buttons
         musicButtons.forEach((btn) => btn.classList.remove("active"))
@@ -426,73 +511,22 @@ document.addEventListener("DOMContentLoaded", () => {
         // Add active class to clicked button
         this.classList.add("active")
         currentSound = sound
-        chrome.storage.local.set({ currentSound: sound })
 
-        // Play sound directly
-        playSound(sound)
+        // Play sound
+        console.log(`Playing sound: ${sound} at volume: ${volumeControl.value / 100}`)
+        chrome.runtime.sendMessage(
+          {
+            action: "playSound",
+            sound: sound,
+            volume: volumeControl.value / 100,
+          },
+          (response) => {
+            console.log("Play sound response:", response)
+          },
+        )
       }
     })
   })
-
-  // Direct audio playback functions
-  function playSound(sound) {
-    stopSound()
-    
-    try {
-      console.log(`Playing sound: ${sound}`)
-      const soundUrl = chrome.runtime.getURL(`sounds/${sound}.mp3`)
-      console.log(`Sound URL: ${soundUrl}`)
-      
-      // Create and configure audio element
-      audioPlayer = new Audio()
-      audioPlayer.src = soundUrl
-      audioPlayer.loop = true
-      audioPlayer.volume = volumeControl.value / 100
-      
-      // Debug listeners
-      audioPlayer.addEventListener('canplay', () => {
-        console.log(`Sound ${sound} loaded and ready to play`)
-      })
-      
-      audioPlayer.addEventListener('playing', () => {
-        console.log(`Sound ${sound} is now playing`)
-      })
-      
-      audioPlayer.addEventListener('error', (e) => {
-        console.error(`Error with sound ${sound}:`, e)
-        console.error('Audio error code:', audioPlayer.error ? audioPlayer.error.code : 'unknown')
-      })
-      
-      // Play the sound
-      audioPlayer.play()
-        .then(() => {
-          console.log(`Sound ${sound} playing successfully`)
-        })
-        .catch(err => {
-          console.error(`Failed to play ${sound}:`, err)
-          // Try an alternative approach
-          setTimeout(() => {
-            console.log(`Retrying playback for ${sound}`)
-            audioPlayer.play().catch(e => console.error(`Retry failed:`, e))
-          }, 500)
-        })
-    } catch (err) {
-      console.error(`Error setting up audio for ${sound}:`, err)
-    }
-  }
-
-  function stopSound() {
-    if (audioPlayer) {
-      try {
-        audioPlayer.pause()
-        audioPlayer.currentTime = 0
-        audioPlayer = null
-        console.log("Sound stopped")
-      } catch (err) {
-        console.error("Error stopping sound:", err)
-      }
-    }
-  }
 
   // Volume control
   volumeControl.addEventListener("input", function () {
@@ -501,8 +535,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chrome.storage.local.set({ volume: this.value })
 
-    if (audioPlayer) {
-      audioPlayer.volume = volume
+    if (currentSound) {
+      chrome.runtime.sendMessage(
+        {
+          action: "setVolume",
+          volume: volume,
+        },
+        (response) => {
+          console.log("Set volume response:", response)
+        },
+      )
     }
   })
 
@@ -541,29 +583,9 @@ document.addEventListener("DOMContentLoaded", () => {
       updatePetImage("idle")
     }
 
-    // Update focus stats
-    updateFocusStats()
-
+    // Don't update focus stats here - let background script handle it
     // Notify background script
     chrome.runtime.sendMessage({ action: "timerComplete" })
-  }
-
-  // Update focus stats
-  function updateFocusStats() {
-    const today = new Date().toISOString().split("T")[0]
-    const duration = Number.parseInt(timerSlider.value)
-
-    chrome.storage.local.get(["focusStats"], (data) => {
-      const stats = data.focusStats || {}
-
-      if (!stats[today]) {
-        stats[today] = 0
-      }
-
-      stats[today] += duration / 60 // Convert to hours
-
-      chrome.storage.local.set({ focusStats: stats })
-    })
   }
 
   // Listen for messages from background script
@@ -580,38 +602,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 
-  // Debug function to check audio files
-  function checkAudioFiles() {
-    const sounds = ["rain", "cafe", "study", "forest","Unstoppable"]
-    
-    sounds.forEach(sound => {
-      const url = chrome.runtime.getURL(`sounds/${sound}.mp3`)
-      console.log(`Checking sound file: ${url}`)
-      
-      fetch(url)
-        .then(response => {
-          if (response.ok) {
-            console.log(`✓ ${sound}.mp3 is accessible`)
-            return response.blob()
-          } else {
-            console.error(`✗ ${sound}.mp3 not found: ${response.status}`)
-            throw new Error(`File not found: ${response.status}`)
-          }
-        })
-        .then(blob => {
-          console.log(`${sound}.mp3 size: ${blob.size} bytes`)
-          if (blob.size === 0) {
-            console.warn(`${sound}.mp3 is empty!`)
-          }
-        })
-        .catch(err => {
-          console.error(`Error checking ${sound}.mp3:`, err)
-        })
-    })
-  }
-  
-  // Run the check on load
-  checkAudioFiles()
+  // Check audio files on load
+  chrome.runtime.sendMessage({ action: "checkAudioFiles" })
 })
 
 // Update timer display
