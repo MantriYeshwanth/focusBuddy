@@ -3,14 +3,15 @@
   "name": "Focus Buddy",
   "version": "1.0",
   "description": "A productivity extension with pomodoro timer, website blocker, to-do list, and focus summary",
-  "permissions": ["storage", "alarms", "notifications", "scripting", "activeTab"],
+  "permissions": ["storage", "alarms", "notifications", "scripting", "activeTab", "tabs"],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["content.js", "audio-handler.js"],
+      "run_at": "document_start"
     }
   ],
   "action": {
@@ -28,7 +29,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sounds/*.mp3", "images/*"],
+      "resources": ["sounds/*.mp3", "images/*", "blocked.html"],
       "matches": ["<all_urls>"]
     }
   ],

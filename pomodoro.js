@@ -14,7 +14,6 @@
 
 //   let timerInterval
 //   let currentSound = null
-//   let audioPlayer = null
 
 //   // Initialize timer display
 //   chrome.storage.local.get(["timerDuration", "timerRemaining", "timerRunning"], (data) => {
@@ -135,6 +134,8 @@
 //   })
 
 //   // DIRECT AUDIO IMPLEMENTATION
+//   let audioPlayer = null
+
 //   // Music buttons with direct audio handling
 //   musicButtons.forEach((button) => {
 //     button.addEventListener("click", function () {
@@ -167,43 +168,44 @@
 //   // Direct audio playback functions
 //   function playSound(sound) {
 //     stopSound()
-    
+
 //     try {
 //       console.log(`Playing sound: ${sound}`)
 //       const soundUrl = chrome.runtime.getURL(`sounds/${sound}.mp3`)
 //       console.log(`Sound URL: ${soundUrl}`)
-      
+
 //       // Create and configure audio element
 //       audioPlayer = new Audio()
 //       audioPlayer.src = soundUrl
 //       audioPlayer.loop = true
 //       audioPlayer.volume = volumeControl.value / 100
-      
+
 //       // Debug listeners
-//       audioPlayer.addEventListener('canplay', () => {
+//       audioPlayer.addEventListener("canplay", () => {
 //         console.log(`Sound ${sound} loaded and ready to play`)
 //       })
-      
-//       audioPlayer.addEventListener('playing', () => {
+
+//       audioPlayer.addEventListener("playing", () => {
 //         console.log(`Sound ${sound} is now playing`)
 //       })
-      
-//       audioPlayer.addEventListener('error', (e) => {
+
+//       audioPlayer.addEventListener("error", (e) => {
 //         console.error(`Error with sound ${sound}:`, e)
-//         console.error('Audio error code:', audioPlayer.error ? audioPlayer.error.code : 'unknown')
+//         console.error("Audio error code:", audioPlayer.error ? audioPlayer.error.code : "unknown")
 //       })
-      
+
 //       // Play the sound
-//       audioPlayer.play()
+//       audioPlayer
+//         .play()
 //         .then(() => {
 //           console.log(`Sound ${sound} playing successfully`)
 //         })
-//         .catch(err => {
+//         .catch((err) => {
 //           console.error(`Failed to play ${sound}:`, err)
 //           // Try an alternative approach
 //           setTimeout(() => {
 //             console.log(`Retrying playback for ${sound}`)
-//             audioPlayer.play().catch(e => console.error(`Retry failed:`, e))
+//             audioPlayer.play().catch((e) => console.error(`Retry failed:`, e))
 //           }, 500)
 //         })
 //     } catch (err) {
@@ -271,29 +273,9 @@
 //       updatePetImage("idle")
 //     }
 
-//     // Update focus stats
-//     updateFocusStats()
-
+//     // Don't update focus stats here - let background script handle it
 //     // Notify background script
 //     chrome.runtime.sendMessage({ action: "timerComplete" })
-//   }
-
-//   // Update focus stats
-//   function updateFocusStats() {
-//     const today = new Date().toISOString().split("T")[0]
-//     const duration = Number.parseInt(timerSlider.value)
-
-//     chrome.storage.local.get(["focusStats"], (data) => {
-//       const stats = data.focusStats || {}
-
-//       if (!stats[today]) {
-//         stats[today] = 0
-//       }
-
-//       stats[today] += duration / 60 // Convert to hours
-
-//       chrome.storage.local.set({ focusStats: stats })
-//     })
 //   }
 
 //   // Listen for messages from background script
@@ -310,38 +292,8 @@
 //     }
 //   })
 
-//   // Debug function to check audio files
-//   function checkAudioFiles() {
-//     const sounds = ["rain", "cafe", "study", "forest","Unstoppable"]
-    
-//     sounds.forEach(sound => {
-//       const url = chrome.runtime.getURL(`sounds/${sound}.mp3`)
-//       console.log(`Checking sound file: ${url}`)
-      
-//       fetch(url)
-//         .then(response => {
-//           if (response.ok) {
-//             console.log(`✓ ${sound}.mp3 is accessible`)
-//             return response.blob()
-//           } else {
-//             console.error(`✗ ${sound}.mp3 not found: ${response.status}`)
-//             throw new Error(`File not found: ${response.status}`)
-//           }
-//         })
-//         .then(blob => {
-//           console.log(`${sound}.mp3 size: ${blob.size} bytes`)
-//           if (blob.size === 0) {
-//             console.warn(`${sound}.mp3 is empty!`)
-//           }
-//         })
-//         .catch(err => {
-//           console.error(`Error checking ${sound}.mp3:`, err)
-//         })
-//     })
-//   }
-  
-//   // Run the check on load
-//   checkAudioFiles()
+//   // Check audio files on load
+//   chrome.runtime.sendMessage({ action: "checkAudioFiles" })
 // })
 
 // // Update timer display
@@ -356,6 +308,10 @@
 //   secondsDisplay.textContent = secs.toString().padStart(2, "0")
 // }
 
+
+
+
+//change
 document.addEventListener("DOMContentLoaded", () => {
   // Timer elements
   const minutesDisplay = document.getElementById("minutes")
@@ -372,6 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let timerInterval
   let currentSound = null
+  const audioPlayer = null
 
   // Initialize timer display
   chrome.storage.local.get(["timerDuration", "timerRemaining", "timerRunning"], (data) => {
@@ -485,11 +442,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (activeButton) {
         activeButton.classList.add("active")
         currentSound = data.currentSound
+        // Try to play the current sound
+        // playSound(data.currentSound)
       }
     }
   })
 
-  // Improved Music buttons
+  // Music buttons - send messages to content script audio handler
   musicButtons.forEach((button) => {
     button.addEventListener("click", function () {
       const sound = this.getAttribute("data-sound")
@@ -500,10 +459,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Stop sound
         console.log(`Stopping sound: ${sound}`)
         musicButtons.forEach((btn) => btn.classList.remove("active"))
-        chrome.runtime.sendMessage({ action: "stopSound" }, (response) => {
-          console.log("Stop sound response:", response)
+
+        // Send stop message to all tabs
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach((tab) => {
+            chrome.tabs
+              .sendMessage(tab.id, { action: "stopSound" })
+              .catch((err) => console.log("Tab not ready for audio message"))
+          })
         })
+
         currentSound = null
+        chrome.storage.local.set({ currentSound: null })
       } else {
         // Remove active class from all buttons
         musicButtons.forEach((btn) => btn.classList.remove("active"))
@@ -511,24 +478,26 @@ document.addEventListener("DOMContentLoaded", () => {
         // Add active class to clicked button
         this.classList.add("active")
         currentSound = sound
+        chrome.storage.local.set({ currentSound: sound })
 
-        // Play sound
-        console.log(`Playing sound: ${sound} at volume: ${volumeControl.value / 100}`)
-        chrome.runtime.sendMessage(
-          {
-            action: "playSound",
-            sound: sound,
-            volume: volumeControl.value / 100,
-          },
-          (response) => {
-            console.log("Play sound response:", response)
-          },
-        )
+        // Send play message to all tabs
+        const volume = volumeControl.value / 100
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach((tab) => {
+            chrome.tabs
+              .sendMessage(tab.id, {
+                action: "playSound",
+                sound: sound,
+                volume: volume,
+              })
+              .catch((err) => console.log("Tab not ready for audio message"))
+          })
+        })
       }
     })
   })
 
-  // Volume control
+  // Volume control - update all tabs
   volumeControl.addEventListener("input", function () {
     const volume = this.value / 100
     console.log(`Volume changed: ${volume}`)
@@ -536,17 +505,145 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.local.set({ volume: this.value })
 
     if (currentSound) {
-      chrome.runtime.sendMessage(
-        {
-          action: "setVolume",
-          volume: volume,
-        },
-        (response) => {
-          console.log("Set volume response:", response)
-        },
-      )
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+          chrome.tabs
+            .sendMessage(tab.id, {
+              action: "setVolume",
+              volume: volume,
+            })
+            .catch((err) => console.log("Tab not ready for audio message"))
+        })
+      })
     }
   })
+
+  // Create simple test sounds if files don't exist
+  function createTestSound(frequency, duration = 1) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    oscillator.frequency.value = frequency
+    oscillator.type = "sine"
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
+
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + duration)
+
+    return audioContext
+  }
+
+  // Audio playback functions
+  // function playSound(sound) {
+  //   stopSound()
+
+  //   try {
+  //     console.log(`Playing sound: ${sound}`)
+
+  //     // Try to load actual MP3 file first
+  //     const soundUrl = chrome.runtime.getURL(`sounds/${sound}.mp3`)
+  //     console.log(`Sound URL: ${soundUrl}`)
+
+  //     audioPlayer = new Audio()
+  //     audioPlayer.src = soundUrl
+  //     audioPlayer.loop = true
+  //     audioPlayer.volume = volumeControl.value / 100
+
+  //     // Add error handler for missing files
+  //     audioPlayer.addEventListener("error", (e) => {
+  //       console.warn(`MP3 file not found for ${sound}, using test tone`)
+
+  //       // Fallback to test sounds
+  //       const frequencies = {
+  //         rain: 200,
+  //         cafe: 300,
+  //         study: 400,
+  //         focus: 500,
+  //       }
+
+  //       // Create a looping test tone
+  //       const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+  //       const oscillator = audioContext.createOscillator()
+  //       const gainNode = audioContext.createGain()
+
+  //       oscillator.connect(gainNode)
+  //       gainNode.connect(audioContext.destination)
+
+  //       oscillator.frequency.value = frequencies[sound] || 300
+  //       oscillator.type = "sine"
+  //       gainNode.gain.value = (volumeControl.value / 100) * 0.1 // Lower volume for test tones
+
+  //       oscillator.start()
+
+  //       // Store for stopping later
+  //       audioPlayer = {
+  //         pause: () => {
+  //           try {
+  //             oscillator.stop()
+  //             audioContext.close()
+  //           } catch (err) {
+  //             console.log("Audio context already closed")
+  //           }
+  //         },
+  //         volume: gainNode.gain.value,
+  //       }
+
+  //       console.log(`Test tone playing for ${sound} at ${frequencies[sound]}Hz`)
+  //     })
+
+  //     audioPlayer.addEventListener("canplay", () => {
+  //       console.log(`Sound ${sound} loaded and ready to play`)
+  //     })
+
+  //     audioPlayer.addEventListener("playing", () => {
+  //       console.log(`Sound ${sound} is now playing`)
+  //     })
+
+  //     // Try to play
+  //     audioPlayer
+  //       .play()
+  //       .then(() => {
+  //         console.log(`Sound ${sound} playing successfully`)
+  //       })
+  //       .catch((err) => {
+  //         console.error(`Failed to play ${sound}:`, err)
+  //       })
+  //   } catch (err) {
+  //     console.error(`Error setting up audio for ${sound}:`, err)
+  //   }
+  // }
+
+  // function stopSound() {
+  //   if (audioPlayer) {
+  //     try {
+  //       if (typeof audioPlayer.pause === "function") {
+  //         audioPlayer.pause()
+  //       }
+  //       audioPlayer = null
+  //       console.log("Sound stopped")
+  //     } catch (err) {
+  //       console.error("Error stopping sound:", err)
+  //     }
+  //   }
+  // }
+
+  // Volume control
+  // volumeControl.addEventListener("input", function () {
+  //   const volume = this.value / 100
+  //   console.log(`Volume changed: ${volume}`)
+
+  //   chrome.storage.local.set({ volume: this.value })
+
+  //   if (audioPlayer && audioPlayer.volume !== undefined) {
+  //     audioPlayer.volume = volume
+  //   }
+  // })
 
   // Start timer function
   function startTimer(duration) {

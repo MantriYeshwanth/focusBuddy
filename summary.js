@@ -1,6 +1,3 @@
-// 
-
-
 document.addEventListener("DOMContentLoaded", () => {
   loadFocusStats()
 
@@ -200,32 +197,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     return days[date.getDay()]
   }
-
-  // Add a test button to manually add focus data for testing
-  function addTestData() {
-    const today = new Date().toISOString().split("T")[0]
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.local.get(["focusStats"], (data) => {
-        const stats = data.focusStats || {}
-        if (!stats[today]) {
-          stats[today] = 0
-        }
-        stats[today] += 0.5 // Add 30 minutes
-
-        chrome.storage.local.set({ focusStats: stats }, () => {
-          console.log("Test data added:", stats)
-          loadFocusStats() // Refresh the display
-        })
-      })
-    } else {
-      console.warn("Chrome storage API is not available. Cannot add test data.")
-    }
-  }
-
-  // Add test button (remove this in production)
-  const testButton = document.createElement("button")
-  testButton.textContent = "Add Test Data"
-  testButton.style.margin = "10px"
-  testButton.onclick = addTestData
-  document.getElementById("summary").appendChild(testButton)
 })
+  // Add a test button to manually add focus data for testing
+//   function addTestData() {
+//     const today = new Date().toISOString().split("T")[0]
+//     if (typeof chrome !== "undefined" && chrome.storage) {
+//       chrome.storage.local.get(["focusStats"], (data) => {
+//         const stats = data.focusStats || {}
+//         if (!stats[today]) {
+//           stats[today] = 0
+//         }
+//         stats[today] += 0.5 // Add 30 minutes
+
+//         chrome.storage.local.set({ focusStats: stats }, () => {
+//           console.log("Test data added:", stats)
+//           loadFocusStats() // Refresh the display
+//         })
+//       })
+//     } else {
+//       console.warn("Chrome storage API is not available. Cannot add test data.")
+//     }
+//   }
+
+//   // Add test button (remove this in production)
+//   const testButton = document.createElement("button")
+//   testButton.textContent = "Add Test Data"
+//   testButton.style.margin = "10px"
+//   testButton.onclick = addTestData
+//   document.getElementById("summary").appendChild(testButton)
+// })
