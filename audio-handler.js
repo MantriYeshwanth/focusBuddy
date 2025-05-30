@@ -1,189 +1,264 @@
-// Audio handler that runs in content script context - persists when popup closes
-console.log("Audio handler loaded")
+// Audio handler that runs in ALL tabs automatically
+console.log("Audio handler loaded in tab:", window.location.href)
 
 let audioPlayer = null
 let currentSound = null
 let currentVolume = 0.5
+let userGestureReceived = false
 
-// Listen for messages from popup and background
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Audio handler received message:", message)
-
-  switch (message.action) {
-    case "playSound":
-      playSound(message.sound, message.volume)
-      sendResponse({ success: true, playing: message.sound })
-      break
-    case "stopSound":
-      stopSound()
-      sendResponse({ success: true, playing: null })
-      break
-    case "setVolume":
-      setVolume(message.volume)
-      sendResponse({ success: true, volume: message.volume })
-      break
-    case "checkAudioStatus":
-      sendResponse({
-        success: true,
-        playing: currentSound,
-        volume: currentVolume,
-      })
-      break
-  }
-
-  return true
-})
-
-// Audio playback functions
-function playSound(sound, volume = 0.5) {
-  console.log(`Audio handler: Playing sound ${sound} at volume ${volume}`)
-
-  stopSound()
-
-  try {
-    currentSound = sound
-    currentVolume = volume
-
-    // Try to load actual MP3 file first
-    const soundUrl = chrome.runtime.getURL(`sounds/${sound}.mp3`)
-    console.log(`Audio handler: Sound URL: ${soundUrl}`)
-
-    audioPlayer = new Audio()
-    audioPlayer.src = soundUrl
-    audioPlayer.loop = true
-    audioPlayer.volume = volume
-
-    // Add error handler for missing files
-    audioPlayer.addEventListener("error", (e) => {
-      console.warn(`Audio handler: MP3 file not found for ${sound}, using test tone`)
-
-      // Fallback to test sounds using Web Audio API
-      createTestTone(sound, volume)
-    })
-
-    audioPlayer.addEventListener("canplay", () => {
-      console.log(`Audio handler: Sound ${sound} loaded and ready to play`)
-    })
-
-    audioPlayer.addEventListener("playing", () => {
-      console.log(`Audio handler: Sound ${sound} is now playing`)
-    })
-
-    // Try to play
-    audioPlayer
-      .play()
-      .then(() => {
-        console.log(`Audio handler: Sound ${sound} playing successfully`)
-        // Store current sound in storage
-        chrome.storage.local.set({ currentSound: sound })
-      })
-      .catch((err) => {
-        console.error(`Audio handler: Failed to play ${sound}:`, err)
-        // Try test tone fallback
-        createTestTone(sound, volume)
-      })
-  } catch (err) {
-    console.error(`Audio handler: Error setting up audio for ${sound}:`, err)
-    createTestTone(sound, volume)
+// Handle user gesture to unlock audio
+function handleUserGesture() {
+  if (!userGestureReceived) {
+    console.log("User gesture received, audio unlocked")
+    userGestureReceived = true
   }
 }
 
-function createTestTone(sound, volume) {
-  try {
-    console.log(`Audio handler: Creating test tone for ${sound}`)
+// Add event listeners for user gestures
+document.addEventListener("click", handleUserGesture, { once: false })
+document.addEventListener("keydown", handleUserGesture, { once: false })
+document.addEventListener("touchstart", handleUserGesture, { once: false })
 
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
+// Listen for messages from background script
+if (typeof chrome !== "undefined" && chrome.runtime) {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log("Audio handler received message:", message)
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
-
-    // Different frequencies for different sounds
-    const frequencies = {
-      rain: 200,
-      cafe: 300,
-      study: 400,
-      focus: 500,
+    switch (message.action) {
+      case "playSound":
+        playSound(message.sound, message.volume)
+          .then(() => sendResponse({ success: true, playing: message.sound }))
+          .catch((err) => sendResponse({ success: false, error: err.message }))
+        return true
+      case "stopSound":
+        stopSound()
+        sendResponse({ success: true, playing: null })
+        break
+      case "setVolume":
+        setVolume(message.volume)
+        sendResponse({ success: true, volume: message.volume })
+        break
     }
 
-    oscillator.frequency.value = frequencies[sound] || 300
-    oscillator.type = "sine"
-    gainNode.gain.value = volume * 0.1 // Lower volume for test tones
+    return true
+  })
 
-    oscillator.start()
+  // Audio playback functions using actual MP3 files
+  async function playSound(sound, volume = 0.5) {
+    console.log(`Audio handler: Playing sound ${sound} at volume ${volume}`)
 
-    // Store for stopping later
+    stopSound()
+
+    try {
+      currentSound = sound
+      currentVolume = volume
+
+      // Map sound names to actual MP3 files
+      const soundFiles = {
+        rain: "sounds/rain.mp3",
+        cafe: "sounds/cafe.mp3",
+        study: "sounds/study.mp3",
+        focus: "sounds/focus.mp3",
+      }
+
+      const soundFile = soundFiles[sound]
+      if (!soundFile) {
+        throw new Error(`Unknown sound: ${sound}`)
+      }
+
+      // Get the full URL for the sound file
+      const soundUrl = chrome.runtime.getURL(soundFile)
+      console.log(`Loading sound from: ${soundUrl}`)
+
+      // Create audio element
+      const audio = new Audio(soundUrl)
+      audio.loop = true
+      audio.volume = volume
+      audio.preload = "auto"
+
+      // Wait for audio to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Audio loading timeout"))
+        }, 5000)
+
+        audio.addEventListener(
+          "canplaythrough",
+          () => {
+            clearTimeout(timeout)
+            resolve()
+          },
+          { once: true },
+        )
+
+        audio.addEventListener(
+          "error",
+          (e) => {
+            clearTimeout(timeout)
+            reject(new Error(`Audio loading failed: ${e.message || "Unknown error"}`))
+          },
+          { once: true },
+        )
+
+        // Start loading
+        audio.load()
+      })
+
+      // Play the audio
+      await audio.play()
+
+      // Store for stopping later
+      audioPlayer = {
+        pause: () => {
+          try {
+            audio.pause()
+            audio.currentTime = 0
+          } catch (err) {
+            console.log("Audio handler: Audio already stopped")
+          }
+        },
+        audio: audio,
+        setVolume: (vol) => {
+          audio.volume = vol
+        },
+      }
+
+      console.log(`Audio handler: Sound ${sound} playing from ${soundFile}`)
+
+      // Report to background script
+      chrome.runtime
+        .sendMessage({
+          action: "audioStarted",
+          sound: sound,
+        })
+        .catch(() => {
+          // Background script might not be ready
+        })
+    } catch (err) {
+      console.error(`Audio handler: Error playing sound ${sound}:`, err)
+
+      // Try fallback with different approach
+      try {
+        await playFallbackSound(sound, volume)
+      } catch (fallbackErr) {
+        console.error("Fallback sound also failed:", fallbackErr)
+        throw err
+      }
+    }
+  }
+
+  // Fallback sound method
+  async function playFallbackSound(sound, volume) {
+    console.log("Audio handler: Using fallback sound method")
+
+    const soundFiles = {
+      rain: "sounds/rain.mp3",
+      cafe: "sounds/cafe.mp3",
+      study: "sounds/study.mp3",
+      focus: "sounds/focus.mp3",
+    }
+
+    const soundFile = soundFiles[sound]
+    if (!soundFile) {
+      throw new Error(`Unknown sound: ${sound}`)
+    }
+
+    // Try fetching the file directly
+    const soundUrl = chrome.runtime.getURL(soundFile)
+    const response = await fetch(soundUrl)
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sound file: ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    const audioUrl = URL.createObjectURL(blob)
+
+    const audio = new Audio(audioUrl)
+    audio.loop = true
+    audio.volume = volume
+
+    await audio.play()
+
     audioPlayer = {
       pause: () => {
         try {
-          oscillator.stop()
-          audioContext.close()
+          audio.pause()
+          audio.currentTime = 0
+          URL.revokeObjectURL(audioUrl)
         } catch (err) {
-          console.log("Audio handler: Audio context already closed")
+          console.log("Audio handler: Fallback audio already stopped")
         }
       },
-      volume: gainNode.gain.value,
-      gainNode: gainNode,
+      audio: audio,
+      setVolume: (vol) => {
+        audio.volume = vol
+      },
     }
 
-    console.log(`Audio handler: Test tone playing for ${sound} at ${frequencies[sound]}Hz`)
-    chrome.storage.local.set({ currentSound: sound })
-  } catch (err) {
-    console.error(`Audio handler: Error creating test tone:`, err)
+    console.log(`Audio handler: Fallback sound ${sound} playing`)
   }
-}
 
-function stopSound() {
-  console.log("Audio handler: Stopping sound")
+  function stopSound() {
+    console.log("Audio handler: Stopping sound")
 
-  if (audioPlayer) {
-    try {
-      if (typeof audioPlayer.pause === "function") {
-        audioPlayer.pause()
+    if (audioPlayer) {
+      try {
+        if (typeof audioPlayer.pause === "function") {
+          audioPlayer.pause()
+        }
+        audioPlayer = null
+        currentSound = null
+        console.log("Audio handler: Sound stopped")
+
+        // Report to background script
+        chrome.runtime
+          .sendMessage({
+            action: "audioStopped",
+          })
+          .catch(() => {
+            // Background script might not be ready
+          })
+      } catch (err) {
+        console.error("Audio handler: Error stopping sound:", err)
       }
-      audioPlayer = null
-      currentSound = null
-      console.log("Audio handler: Sound stopped")
-      chrome.storage.local.set({ currentSound: null })
-    } catch (err) {
-      console.error("Audio handler: Error stopping sound:", err)
     }
   }
-}
 
-function setVolume(volume) {
-  console.log(`Audio handler: Setting volume to ${volume}`)
+  function setVolume(volume) {
+    console.log(`Audio handler: Setting volume to ${volume}`)
 
-  currentVolume = volume
+    currentVolume = volume
 
-  if (audioPlayer) {
-    try {
-      if (audioPlayer.volume !== undefined) {
-        audioPlayer.volume = volume
-      } else if (audioPlayer.gainNode) {
-        audioPlayer.gainNode.gain.value = volume * 0.1
+    if (audioPlayer && audioPlayer.setVolume) {
+      try {
+        audioPlayer.setVolume(volume)
+        console.log("Audio handler: Volume updated")
+      } catch (err) {
+        console.error("Audio handler: Error setting volume:", err)
       }
-      console.log("Audio handler: Volume updated")
-    } catch (err) {
-      console.error("Audio handler: Error setting volume:", err)
     }
   }
+
+  // Resume audio on page load if it was playing (with delay to allow user gesture)
+  chrome.storage.local.get(["currentSound", "volume"], (data) => {
+    if (data.currentSound) {
+      console.log(`Audio handler: Will resume sound: ${data.currentSound} after user gesture`)
+
+      // Wait for user gesture before trying to play
+      const tryResumeAudio = () => {
+        if (userGestureReceived) {
+          playSound(data.currentSound, (data.volume || 50) / 100)
+        } else {
+          // Try again in a bit
+          setTimeout(tryResumeAudio, 1000)
+        }
+      }
+
+      // Start trying after a short delay
+      setTimeout(tryResumeAudio, 2000)
+    }
+  })
+} else {
+  console.log("Chrome runtime is not available. This script is likely running outside of a Chrome extension context.")
 }
-
-// Resume audio on page load if it was playing
-chrome.storage.local.get(["currentSound", "volume"], (data) => {
-  if (data.currentSound) {
-    console.log(`Audio handler: Resuming sound: ${data.currentSound}`)
-    // Small delay to ensure page is ready
-    setTimeout(() => {
-      playSound(data.currentSound, (data.volume || 50) / 100)
-    }, 1000)
-  }
-})
-
-// Keep audio playing when navigating
-window.addEventListener("beforeunload", () => {
-  // Don't stop audio on navigation - let it continue
-  console.log("Audio handler: Page unloading, keeping audio alive")
-})
